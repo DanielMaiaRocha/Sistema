@@ -10,6 +10,7 @@ class Application():
         self.screen()
         self.widgets()
         self.buttons_frame1()
+        self.list_frame2()
         root.mainloop()
     
     def screen(self):
@@ -66,8 +67,33 @@ class Application():
         self.input_busca.place(relx= 0.01, rely= 0.1, relwidth= 0.4, relheight= 0.1)
     
     def list_frame2(self):
-        self.CLIlist = ttk.Treeview(self.frame_2)
+        self.CLIlist = ttk.Treeview(self.frame_2, height= 3, column=("col1", "col2", "col3", "col4", "col5", "col6", "col7", "col8"))
+        self.CLIlist.heading("#0", text="")
+        self.CLIlist.heading("#1", text="Codigo")
+        self.CLIlist.heading("#2", text="Nome")
+        self.CLIlist.heading("#3", text="Endereço")
+        self.CLIlist.heading("#4", text="CPF")          
+        self.CLIlist.heading("#5", text="Inicio")
+        self.CLIlist.heading("#6", text="Aniversário")
+        self.CLIlist.heading("#7", text="Fim")
+
+        self.CLIlist.column("#0", width=1)
+        self.CLIlist.column("#1", width=50)
+        self.CLIlist.column("#2", width=250)
+        self.CLIlist.column("#3", width=450)
+        self.CLIlist.column("#4", width=180)
+        self.CLIlist.column("#5", width=100)
+        self.CLIlist.column("#6", width=100)
+        self.CLIlist.column("#7", width=100)
         
+        self.CLIlist.place(relx= 0.01, rely= 0.01, relwidth= 0.95, relheight= 0.85)
+
+        self.scrool_list = Scrollbar(self.frame_2, orient="vertical")
+        self.CLIlist.configure(yscroll=self.scrool_list.set)
+        self.scrool_list.place(relx=0.96, rely=0.01, relwidth=0.02, relheight=0.85)
+
+
+
 
 
        
