@@ -3,9 +3,15 @@ from tkinter import ttk
 import sqlite3
 
 class Funcs():
-    def clean_fields(self):
+    def clean_fields_loc(self):
         self.input_name.delete(0, END) 
-    
+    def clean_fields(self):
+        self.input_name.delete(0, END)
+        self.input_address.delete(0, END)
+        self.input_cpf.delete(0, END)
+        self.input_start.delete(0, END)
+        self.input_renew.delete(0, END)
+        self.input_end.delete(0, END)
     def switch_to_cadastro_tab(self):
         self.page.select(self.page3)
         self.show_frame_2 = False  # Oculta o frame ao mudar para a aba "cadastro"
@@ -36,6 +42,33 @@ class Funcs():
                             """)
         self.conn.commit()
         self.db_disconect()                    
+    def add_new(self):
+        self.code = self.input_code.get()
+        self.name = self.input_name.get()
+        self.address = self.input_address.get()
+        self.cpf = self.input_cpf.get()
+        self.start = self.input_start.get()
+        self.renew = self.input_renew.get()
+        self.end = self.input_end.get()
+        self.db_connect()
+
+        self.cursor.execute(""" INSERT INTO clientes (nome_cliente, endereço,  cpf, inicio_contrato, aniversario_contrato, fim_contrato)
+                            VALUES (?, ?, ?, ?, ?, ?)""", (self.name, self.address, self.start, self.renew, self.end))
+        self.conn.commit()
+        self.db_disconect()
+        self.list_select()
+        self.clean_fields()
+    def list_select(self):
+        self.CLIlist.delete(*self.CLIlist.get_children())
+        self.db_connect
+        
+        lista = self.cursor.execute(""" SELECT cod, nome_cliente, endereço, cpf, inicio_contrato, aniversario_contrato, fim_contrato FROM clientes
+        ORDER BY nome_cliente ASC; """)
+
+        for i in lista: 
+            self.CLIlist.insert("", END, values=i)
+        self.db_disconect()    
+
 
 
 class Application(Funcs):
@@ -46,6 +79,7 @@ class Application(Funcs):
         self.buttons_frame1()
         self.list_frame2()
         self.db_create()
+        self.list_select
         self.root.mainloop()
     
     def screen(self):
@@ -89,7 +123,7 @@ class Application(Funcs):
         
         ### Botão Limpar
         self.bt_clean = Button(self.page2, text="Limpar", bd=2, bg="black", fg="white",
-                               font=('verdana', 10, 'bold'), command=self.clean_fields)
+                               font=('verdana', 10, 'bold'), command= self.clean_fields_loc)
         self.bt_clean.place(relx=0.12, rely=0.25, relwidth=0.1, relheight=0.15)
 
         ### Botão Novo
@@ -122,23 +156,25 @@ class Application(Funcs):
     
         ### Botão Salvar Cadastro   
         self.bt_save = Button(self.page3, text="Salvar", bd=2, bg="black", fg="white",
-                                font=('verdana', 10, 'bold'))
+                                font=('verdana', 10, 'bold'), command= self.add_new)
         self.bt_save.place(relx=0.82, rely=0.87, relwidth=0.08, relheight=0.12)
         
         ### Botão Limpar Cadastro
         self.bt_clean = Button(self.page3, text="Limpar", bd=2, bg="black", fg="white",
                                font=('verdana', 10, 'bold'), command=self.clean_fields)
         self.bt_clean.place(relx=0.92, rely=0.87, relwidth=0.08, relheight=0.12)
-
-        self.lb_busca = Label(self.page3, text="Nome:", bg="White", fg="black",
+        
+        ### Nome
+        self.lb_name = Label(self.page3, text="Nome:", bg="White", fg="black",
                                                 font=('verdana', 10, 'bold'))
-        self.lb_busca.place(relx=0.01, rely=0.02)
+        self.lb_name.place(relx=0.01, rely=0.02)
 
         self.input_name = Entry(self.page3, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
         self.input_name.place(relx=0.01, rely=0.1, relwidth=0.25, relheight=0.09)
-
+        
+        ### Endereço
         self.lb_address = Label(self.page3, text="Endereço:", bg="White", fg="black",
                                 font=('verdana', 10, 'bold'))
         self.lb_address.place(relx=0.01, rely=0.2)
@@ -147,24 +183,46 @@ class Application(Funcs):
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
         self.input_address.place(relx=0.01, rely=0.28, relwidth=0.4, relheight=0.09)
-
-        self.lb_address = Label(self.page3, text="Endereço:", bg="White", fg="black",
+        
+        ### CPF
+        self.lb_cpf = Label(self.page3, text="CPF:", bg="White", fg="black",
                                 font=('verdana', 10, 'bold'))
-        self.lb_address.place(relx=0.01, rely=0.2)
+        self.lb_cpf.place(relx=0.01, rely=0.4)
 
-        self.input_address = Entry(self.page3, bg="white", 
+        self.input_cpf = Entry(self.page3, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_address.place(relx=0.01, rely=0.48, relwidth=0.15, relheight=0.09)
-
-        self.lb_address = Label(self.page3, text="CPF:", bg="White", fg="black",
+        self.input_cpf.place(relx=0.01, rely=0.48, relwidth=0.15, relheight=0.09)
+        
+        ### Inicio
+        self.lb_start = Label(self.page3, text="Inicio:", bg="White", fg="black",
                                 font=('verdana', 10, 'bold'))
-        self.lb_address.place(relx=0.01, rely=0.4)
+        self.lb_start.place(relx=0.01, rely=0.60)
 
-        self.input_address = Entry(self.page3, bg="white", 
+        self.input_start = Entry(self.page3, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_address.place(relx=0.01, rely=0.68, relwidth=0.15, relheight=0.09)
+        self.input_start.place(relx=0.01, rely=0.68, relwidth=0.08, relheight=0.09)
+        
+        ### Aniversario
+        self.lb_renew = Label(self.page3, text="Aniversario:", bg="White", fg="black",
+                                font=('verdana', 10, 'bold'))
+        self.lb_renew.place(relx=0.2, rely=0.68)
+
+        self.input_renew = Entry(self.page3, bg="white", 
+                             highlightbackground="black", highlightthickness=1, fg="black",
+                             font=("verdana", 10, "bold"))
+        self.input_renew.place(relx=0.2, rely=0.78, relwidth=0.08, relheight=0.09)
+        
+        ### Fim
+        self.input_end = Entry(self.page3, bg="white", 
+                             highlightbackground="black", highlightthickness=1, fg="black",
+                             font=("verdana", 10, "bold"))
+        self.input_end.place(relx=0.01, rely=0.88, relwidth=0.08, relheight=0.09)
+        
+        self.lb_end = Label(self.page3, text="Fim:", bg="White", fg="black",
+                                font=('verdana', 10, 'bold'))
+        self.lb_end.place(relx=0.01, rely=0.8)
         
 
     
