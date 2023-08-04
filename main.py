@@ -1,10 +1,10 @@
 from tkinter import *
 from tkinter import ttk
-import sqlite3
+import sqlite3 
 
 class Funcs():
     def clean_fields_loc(self):
-        self.input_name.delete(0, END) 
+        self.input_nome.delete(0, END) 
     def clean_fields(self):
         self.input_name.delete(0, END)
         self.input_address.delete(0, END)
@@ -42,31 +42,34 @@ class Funcs():
                             """)
         self.conn.commit()
         self.db_disconect()                    
-    def add_new(self):
+    def add_new_client(self):
         self.code = self.input_code.get()
         self.name = self.input_name.get()
-        self.address = self.input_address.get()
+        self.address = self.input_address.get()     
         self.cpf = self.input_cpf.get()
         self.start = self.input_start.get()
-        self.renew = self.input_renew.get()
+        self.renew = self.input_renew.get() 
         self.end = self.input_end.get()
         self.db_connect()
 
-        self.cursor.execute(""" INSERT INTO clientes (nome_cliente, endereço,  cpf, inicio_contrato, aniversario_contrato, fim_contrato)
-                            VALUES (?, ?, ?, ?, ?, ?)""", (self.name, self.address, self.start, self.renew, self.end))
+        self.cursor.execute(""" INSERT INTO clientes (nome_cliente, endereço,  cpf, inicio_contrato,
+                                         aniversario_contrato, fim_contrato)
+                                        VALUES (?, ?, ?, ?, ?, ?)""", 
+                            (self.name, self.address, self.cpf, self.start, self.renew, self.end))
         self.conn.commit()
         self.db_disconect()
         self.list_select()
         self.clean_fields()
+    
     def list_select(self):
-        self.CLIlist.delete(*self.CLIlist.get_children())
-        self.db_connect
+        self.list_bd.delete(*self.list_bd.get_children())
+        self.db_connect()
         
         lista = self.cursor.execute(""" SELECT cod, nome_cliente, endereço, cpf, inicio_contrato, aniversario_contrato, fim_contrato FROM clientes
         ORDER BY nome_cliente ASC; """)
 
         for i in lista: 
-            self.CLIlist.insert("", END, values=i)
+            self.list_bd.insert("", END, value= i)
         self.db_disconect()    
 
 
@@ -79,7 +82,7 @@ class Application(Funcs):
         self.buttons_frame1()
         self.list_frame2()
         self.db_create()
-        self.list_select
+        self.list_select()
         self.root.mainloop()
     
     def screen(self):
@@ -147,16 +150,16 @@ class Application(Funcs):
         self.lb_busca.place(relx=0.01, rely=0.02)
 
         ### Barra de Digitação 
-        self.input_name = Entry(self.page2, bg="white", 
+        self.input_nome = Entry(self.page2, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_name.place(relx=0.01, rely=0.1, relwidth=0.4, relheight=0.09)
+        self.input_nome.place(relx=0.01, rely=0.1, relwidth=0.4, relheight=0.09)
         
         ### Pagina Cadastro 
     
         ### Botão Salvar Cadastro   
         self.bt_save = Button(self.page3, text="Salvar", bd=2, bg="black", fg="white",
-                                font=('verdana', 10, 'bold'), command= self.add_new)
+                                font=('verdana', 10, 'bold'), command= self.add_new_client)
         self.bt_save.place(relx=0.82, rely=0.87, relwidth=0.08, relheight=0.12)
         
         ### Botão Limpar Cadastro
@@ -228,29 +231,29 @@ class Application(Funcs):
     
     def list_frame2(self):
         self.show_frame_2 = True
-        self.CLIlist = ttk.Treeview(self.frame_2, height=3, column=("col1", "col2", "col3", "col4", "col5", "col6", "col7", "col8"))
-        self.CLIlist.heading("#0", text="")
-        self.CLIlist.heading("#1", text="Codigo")
-        self.CLIlist.heading("#2", text="Nome")
-        self.CLIlist.heading("#3", text="Endereço")
-        self.CLIlist.heading("#4", text="CPF")          
-        self.CLIlist.heading("#5", text="Inicio")
-        self.CLIlist.heading("#6", text="Aniversário")
-        self.CLIlist.heading("#7", text="Fim")
+        self.list_bd = ttk.Treeview(self.frame_2, height=3, column=("col1", "col2", "col3", "col4", "col5", "col6", "col7", "col8"))
+        self.list_bd.heading("#0", text="")
+        self.list_bd.heading("#1", text="Codigo")
+        self.list_bd.heading("#2", text="Nome")
+        self.list_bd.heading("#3", text="Endereço")
+        self.list_bd.heading("#4", text="CPF")          
+        self.list_bd.heading("#5", text="Inicio")
+        self.list_bd.heading("#6", text="Aniversário")
+        self.list_bd.heading("#7", text="Fim")
 
-        self.CLIlist.column("#0", width=1)
-        self.CLIlist.column("#1", width=50)
-        self.CLIlist.column("#2", width=250)
-        self.CLIlist.column("#3", width=450)
-        self.CLIlist.column("#4", width=180)
-        self.CLIlist.column("#5", width=100)
-        self.CLIlist.column("#6", width=100)
-        self.CLIlist.column("#7", width=100)
+        self.list_bd.column("#0", width=1)
+        self.list_bd.column("#1", width=50)
+        self.list_bd.column("#2", width=250)
+        self.list_bd.column("#3", width=450)
+        self.list_bd.column("#4", width=180)
+        self.list_bd.column("#5", width=100)
+        self.list_bd.column("#6", width=100)
+        self.list_bd.column("#7", width=100)
         
-        self.CLIlist.place(relx=0.01, rely=0.01, relwidth=0.95, relheight=0.85)
+        self.list_bd.place(relx=0.01, rely=0.01, relwidth=0.95, relheight=0.85)
 
         self.scrool_list = Scrollbar(self.frame_2, orient="vertical")
-        self.CLIlist.configure(yscroll=self.scrool_list.set)
+        self.list_bd.configure(yscroll=self.scrool_list.set)
         self.scrool_list.place(relx=0.96, rely=0.01, relwidth=0.02, relheight=0.85)
 
         
