@@ -76,21 +76,25 @@ class Funcs():
         self.db_disconect()    
 
     def OnDoubleClick(self, event):
-        self.clean_fields_loc()
-        self.list_select.selection()
-
-        for n in self.list_select.selection():
-            col1, col2, col3, col4, col5, col6 = self.list_select.item(n, 'values')
-        self.input_name.insert(END, col1)
-        self.input_endereço.insert(END, col2)
-        self.input_cpf.insert(END, col3)
-        self.input_start.insert(END, col4)
-        self.input_renew.insert(END, col5)
-        self.input_end.insert(END, col6)
+        self.clean_fields()
+        selected_item = self.list_bd.selection()[0]
+        values = self.list_bd.item(selected_item, 'values')
+        self.name.insert(END, values[1])
 
     def client_delete(self):
+        selected_item = self.list_bd.selection()[0]
+        values = self.list_bd.item(selected_item, 'values')
         self.db_connect()
-        
+        try:
+            self.cursor.execute("DELETE FROM clientes WHERE nome_cliente = ?", (values[1],))
+            self.conn.commit()
+            print("Cliente excluído com sucesso.")
+            self.list_select()
+            self.clean_fields()
+        except sqlite3.Error as e:
+            print("Erro ao excluir cliente:", e)
+        finally:
+            self.db_disconect()
 class Application(Funcs):
     def __init__(self):
         self.root = Tk()
@@ -158,7 +162,7 @@ class Application(Funcs):
         
         ### Botão Excluir
         self.bt_delete = Button(self.page2, text="Excluir", bd=2, bg="black", fg="white",
-                                font=('verdana', 10, 'bold'))
+                                font=('verdana', 10, 'bold'), command= self.client_delete)
         self.bt_delete.place(relx=0.88, rely=0.07, relwidth=0.1, relheight=0.15)
 
         ### Botão Nome
@@ -275,5 +279,5 @@ class Application(Funcs):
 
         
         self.page3.bind("<<NotebookTabChanged>>", lambda event: self.switch_to_locatarios_tab())
-
+        self.list_bd.bind("<Double-1>", lambda event: self.OnDoubleClick)
 Application()   
