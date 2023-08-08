@@ -75,8 +75,22 @@ class Funcs():
             self.list_bd.insert("", END, value= i)
         self.db_disconect()    
 
+    def OnDoubleClick(self, event):
+        self.clean_fields_loc()
+        self.list_select.selection()
 
+        for n in self.list_select.selection():
+            col1, col2, col3, col4, col5, col6 = self.list_select.item(n, 'values')
+        self.input_name.insert(END, col1)
+        self.input_endereço.insert(END, col2)
+        self.input_cpf.insert(END, col3)
+        self.input_start.insert(END, col4)
+        self.input_renew.insert(END, col5)
+        self.input_end.insert(END, col6)
 
+    def client_delete(self):
+        self.db_connect()
+        
 class Application(Funcs):
     def __init__(self):
         self.root = Tk()
