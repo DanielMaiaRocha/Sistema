@@ -63,7 +63,6 @@ class Funcs():
             print("Erro ao adicionar novo cliente:", e)
         finally:
             self.db_disconect()
-
     def list_select(self):
         self.list_bd.delete(*self.list_bd.get_children())
         self.db_connect()
@@ -74,14 +73,26 @@ class Funcs():
         for i in lista: 
             self.list_bd.insert("", END, value= i)
         self.db_disconect()    
-
+    def fill_fields_from_list(self, values):
+        self.input_name.delete(0, END)
+        self.input_address.delete(0, END)
+        self.input_cpf.delete(0, END)
+        self.input_start.delete(0, END)
+        self.input_renew.delete(0, END)
+        self.input_end.delete(0, END)
+        
+        self.input_name.insert(END, values[1])
+        self.input_address.insert(END, values[2])
+        self.input_cpf.insert(END, values[3])
+        self.input_start.insert(END, values[4])
+        self.input_renew.insert(END, values[5])
+        self.input_end.insert(END, values[6])
     def OnDoubleClick(self, event):
-        self.clean_fields()
         selected_item = self.list_bd.selection()[0]
         values = self.list_bd.item(selected_item, 'values')
-        self.name.insert(END, values[1])
-
-    def client_delete(self):
+        self.fill_fields_from_list(values)
+        self.switch_to_cadastro_tab()
+    def client_delete(self):     
         selected_item = self.list_bd.selection()[0]
         values = self.list_bd.item(selected_item, 'values')
         self.db_connect()
@@ -95,6 +106,23 @@ class Funcs():
             print("Erro ao excluir cliente:", e)
         finally:
             self.db_disconect()
+    def update_client(self):
+        selected_item = self.list_bd.selection()[0]
+        values = self.list_bd.item(selected_item, 'values')
+        self.db_connect
+        try:
+            self.cursor.execute(" UPDATE clientes SET WHERE nome_cliente = ?", (values[1],))             
+            self.conn.commit()
+            print("Cliente atualizado com sucesso")
+            self.list_select()
+            self.clean_fields()
+        except sqlite3.Error as e:
+            print("Erro ao atualizar cliente", e)
+        finally:
+            self.db_disconect()
+        
+        
+
 class Application(Funcs):
     def __init__(self):
         self.root = Tk()
@@ -153,12 +181,7 @@ class Application(Funcs):
         ### Botão Novo
         self.bt_new = Button(self.page2, text="Novo", bd=2, bg="black", fg="white",
                              font=('verdana', 10, 'bold'), command=self.switch_to_cadastro_tab)
-        self.bt_new.place(relx=0.66, rely=0.07, relwidth=0.1, relheight=0.15)
-
-        ### Botão Editar
-        self.bt_edit = Button(self.page2, text="Editar", bd=2, bg="black", fg="white",
-                              font=('verdana', 10, 'bold'))
-        self.bt_edit.place(relx=0.77, rely=0.07, relwidth=0.1, relheight=0.15)
+        self.bt_new.place(relx=0.77, rely=0.07, relwidth=0.1, relheight=0.15)
         
         ### Botão Excluir
         self.bt_delete = Button(self.page2, text="Excluir", bd=2, bg="black", fg="white",
@@ -181,12 +204,22 @@ class Application(Funcs):
         ### Botão Salvar Cadastro   
         self.bt_save = Button(self.page3, text="Salvar", bd=2, bg="black", fg="white",
                                 font=('verdana', 10, 'bold'), command= self.add_new_client)
-        self.bt_save.place(relx=0.82, rely=0.87, relwidth=0.08, relheight=0.12)
+        self.bt_save.place(relx=0.62, rely=0.87, relwidth=0.08, relheight=0.12)
         
         ### Botão Limpar Cadastro
         self.bt_clean = Button(self.page3, text="Limpar", bd=2, bg="black", fg="white",
                                font=('verdana', 10, 'bold'), command=self.clean_fields)
-        self.bt_clean.place(relx=0.92, rely=0.87, relwidth=0.08, relheight=0.12)
+        self.bt_clean.place(relx=0.72, rely=0.87, relwidth=0.08, relheight=0.12)
+
+        ### Botão Editar
+        self.bt_edit = Button(self.page3, text="Editar", bd=2, bg="black", fg="white",
+                              font=('verdana', 10, 'bold'), command= self.update_client)
+        self.bt_edit.place(relx=0.82, rely=0.87, relwidth=0.08, relheight=0.12)
+
+        ### Botão Voltar Aba Locatarios
+        self.bt_return = Button(self.page3, text="Voltar", bd=2, bg="black", fg="white",
+                                font=('verdana', 10, 'bold'), command= self.switch_to_locatarios_tab)
+        self.bt_return.place(relx= 0.92, rely=0.87, relwidth=0.08, relheight=0.12)
         
         ### Nome
         self.lb_name = Label(self.page3, text="Nome:", bg="White", fg="black",
@@ -279,5 +312,5 @@ class Application(Funcs):
 
         
         self.page3.bind("<<NotebookTabChanged>>", lambda event: self.switch_to_locatarios_tab())
-        self.list_bd.bind("<Double-1>", lambda event: self.OnDoubleClick)
+        self.list_bd.bind("<Double-1>", lambda event: self.OnDoubleClick(event))
 Application()   
