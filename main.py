@@ -43,24 +43,27 @@ class Funcs():
         self.conn.commit()
         self.db_disconect()                    
     def add_new_client(self):
-        self.code = self.input_code.get()
         self.name = self.input_name.get()
-        self.address = self.input_address.get()     
+        self.address = self.input_address.get()
         self.cpf = self.input_cpf.get()
         self.start = self.input_start.get()
-        self.renew = self.input_renew.get() 
+        self.renew = self.input_renew.get()
         self.end = self.input_end.get()
         self.db_connect()
+        try:
+            self.cursor.execute("""INSERT INTO clientes (nome_cliente, endereço,  cpf, inicio_contrato,
+                                     aniversario_contrato, fim_contrato)
+                                    VALUES (?, ?, ?, ?, ?, ?)""", 
+                                (self.name, self.address, self.cpf, self.start, self.renew, self.end))
+            self.conn.commit()
+            print("Novo cliente adicionado com sucesso.")
+            self.list_select()
+            self.clean_fields()
+        except sqlite3.Error as e:
+            print("Erro ao adicionar novo cliente:", e)
+        finally:
+            self.db_disconect()
 
-        self.cursor.execute(""" INSERT INTO clientes (nome_cliente, endereço,  cpf, inicio_contrato,
-                                         aniversario_contrato, fim_contrato)
-                                        VALUES (?, ?, ?, ?, ?, ?)""", 
-                            (self.name, self.address, self.cpf, self.start, self.renew, self.end))
-        self.conn.commit()
-        self.db_disconect()
-        self.list_select()
-        self.clean_fields()
-    
     def list_select(self):
         self.list_bd.delete(*self.list_bd.get_children())
         self.db_connect()
@@ -153,8 +156,8 @@ class Application(Funcs):
         self.input_nome = Entry(self.page2, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_nome.place(relx=0.01, rely=0.1, relwidth=0.4, relheight=0.09)
-        
+        self.input_nome.place(relx=0.01, rely=0.1, relwidth=0.4, relheight=0.09)       
+         
         ### Pagina Cadastro 
     
         ### Botão Salvar Cadastro   
