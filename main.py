@@ -1,6 +1,10 @@
 from tkinter import *
 from tkinter import ttk
 import sqlite3 
+from PIL import Image, ImageTk
+import yagmail
+import pandas as pd
+
 
 class Funcs():
     def clean_fields_loc(self):
@@ -21,6 +25,11 @@ class Funcs():
         self.page.select(self.page2)
         self.show_frame_2 = True  # Mostra o frame ao voltar para a aba "Locatarios"
         self.frame_2.place(relx=0.02, rely=0.5, relwidth=0.97, relheight=0.46)
+
+    def switch_to_initial_tab(self):
+        self.page.select(self.page1)
+        self.show_frame_2 = False  
+        self.frame_2.place.forget()   
     
     def db_connect(self):
         self.conn = sqlite3.connect("bancoslx.db")
@@ -107,11 +116,29 @@ class Funcs():
         finally:
             self.db_disconect()
     def update_client(self):
-        selected_item = self.list_bd.selection()[0]
-        values = self.list_bd.item(selected_item, 'values')
-        self.db_connect
+        selected_item = self.list_bd.selection()
+        if not selected_item:
+            print("Nenhum cliente selecionado para atualização.")
+            return
+
+        values = self.list_bd.item(selected_item[0], 'values')
+        if not values:
+            print("Valores do cliente selecionado não encontrados.")
+            return
+
+        self.db_connect()
+        new_name = self.input_name.get()
+        new_address = self.input_address.get()
+        new_cpf = self.input_cpf.get()
+        new_start = self.input_start.get()
+        new_renew = self.input_renew.get()
+        new_end = self.input_end.get()
+
         try:
-            self.cursor.execute(" UPDATE clientes SET WHERE nome_cliente = ?", (values[1],))             
+            self.cursor.execute(
+                """UPDATE clientes SET nome_cliente = ?, endereço = ?, cpf = ?, inicio_contrato = ?, 
+                aniversario_contrato = ?, fim_contrato = ? WHERE cod = ?""",
+                (new_name, new_address, new_cpf, new_start, new_renew, new_end, values[0]))
             self.conn.commit()
             print("Cliente atualizado com sucesso")
             self.list_select()
@@ -120,7 +147,30 @@ class Funcs():
             print("Erro ao atualizar cliente", e)
         finally:
             self.db_disconect()
-        
+    def import_from_excel(self, excel_file):
+        try:
+            df = pd.read_excel(excel_file, sheet_name="clientes")  # Ler a planilha "clientes" do arquivo Excel
+            self.db_connect()
+
+            for index, row in df.iterrows():
+                name = row['nome']
+                address = row['endereço']
+                cpf = row['cpf']
+                start = row['inicio_contrato']
+                renew = row['aniversario_contrato']
+                end = row['fim_contrato']
+
+                self.cursor.execute("""
+                    INSERT INTO clientes (nome_cliente, endereço, cpf, inicio_contrato, aniversario_contrato, fim_contrato)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (name, address, cpf, start, renew, end))
+
+            self.conn.commit()
+            print("Dados importados com sucesso.")
+        except Exception as e:
+            print("Erro ao importar dados:", e)
+        finally:
+            self.db_disconect()    
         
 
 class Application(Funcs):
@@ -166,6 +216,16 @@ class Application(Funcs):
         
         self.page.place(relx=0, rely=0, relwidth=0.98, relheight=0.98)
          
+        ### Pagina Inicial 
+
+        self.bt_locatarios = Button(self.page1, text="Locatarios", bd=2, bg="black", fg="white",
+                                font=('verdana', 10, 'bold'), command= self.switch_to_locatarios_tab)
+        self.bt_locatarios.place(relx=0.01, rely=0.25, relwidth=0.07, relheight=0.15) 
+
+        self.bt_cadastro = Button(self.page1, text="Cadastro", bd=2, bg="black", fg="white",
+                                font=('verdana', 10, 'bold'), command= self.switch_to_cadastro_tab)
+        self.bt_cadastro.place(relx=0.01, rely=0.45, relwidth=0.07, relheight=0.15) 
+
         ### Botões Pagina de Locatarios
        
         ### Botão Busca
@@ -198,6 +258,11 @@ class Application(Funcs):
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
         self.input_nome.place(relx=0.01, rely=0.1, relwidth=0.4, relheight=0.09)       
+        
+        ### Botão voltar para inicial
+        self.bt_return = Button(self.page2, text="Voltar", bd=2, bg="black", fg="white",
+                                font=('verdana', 10, 'bold'), command= self.switch_to_initial_tab)
+        self.bt_return.place(relx= 0.92, rely=0.87, relwidth=0.08, relheight=0.12)
          
         ### Pagina Cadastro 
     
@@ -312,5 +377,6 @@ class Application(Funcs):
 
         
         self.page3.bind("<<NotebookTabChanged>>", lambda event: self.switch_to_locatarios_tab())
+        self.page1.bind("<<NotebookTabChanged>>", lambda event: self.switch_to_initial_tab())
         self.list_bd.bind("<Double-1>", lambda event: self.OnDoubleClick(event))
 Application()   
