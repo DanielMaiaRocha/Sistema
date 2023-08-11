@@ -4,12 +4,16 @@ import sqlite3
 from PIL import Image, ImageTk
 import yagmail
 import pandas as pd
+import datetime
 
 
 class Funcs():
+    def email():
+        yag = yagmail.SMTP('sistema.slxadm@gmail.com', '8520147we')
     def clean_fields_loc(self):
         self.input_nome.delete(0, END) 
     def clean_fields(self):
+        self.input_nameprop.delete(0, END)
         self.input_name.delete(0, END)
         self.input_address.delete(0, END)
         self.input_cpf.delete(0, END)
@@ -40,8 +44,9 @@ class Funcs():
         self.db_connect()
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS clientes (
                             cod INTEGER PRIMARY KEY AUTOINCREMENT, 
+                            nome_proprietario CHAR(40) NOT NULL,
                             nome_cliente CHAR(40) NOT NULL,
-                            cpf VARCHAR(11) NOT NULL,
+                            cpf VARCHAR(25) NOT NULL,
                             endereço CHAR(40) NOT NULL,
                             inicio_contrato VARCHAR(6) NOT NULL, 
                             aniversario_contrato VARCHAR(6) NOT NULL,
@@ -52,18 +57,25 @@ class Funcs():
         self.conn.commit()
         self.db_disconect()                    
     def add_new_client(self):
+        self.nameprop = self.input_nameprop.get()
         self.name = self.input_name.get()
         self.address = self.input_address.get()
         self.cpf = self.input_cpf.get()
         self.start = self.input_start.get()
         self.renew = self.input_renew.get()
         self.end = self.input_end.get()
+        try:
+            self.start = datetime.datetime.strptime(self.start, '%d/%m/%Y').date()
+            self.renew = datetime.datetime.strptime(self.renew, '%d/%m/%Y').date()
+            self.end = datetime.datetime.strptime(self.end, '%d/%m/%Y').date()
+        except ValueError:
+            print("Formato de data inválido. Utilize o formato dd/mm/aaaa.")
         self.db_connect()
         try:
-            self.cursor.execute("""INSERT INTO clientes (nome_cliente, endereço,  cpf, inicio_contrato,
+            self.cursor.execute("""INSERT INTO clientes (nome_proprietario, nome_cliente, endereço,  cpf, inicio_contrato,
                                      aniversario_contrato, fim_contrato)
-                                    VALUES (?, ?, ?, ?, ?, ?)""", 
-                                (self.name, self.address, self.cpf, self.start, self.renew, self.end))
+                                    VALUES (?,?, ?, ?, ?, ?, ?)""", 
+                                (self.nameprop, self.name, self.address, self.cpf, self.start, self.renew, self.end))
             self.conn.commit()
             print("Novo cliente adicionado com sucesso.")
             self.list_select()
@@ -76,13 +88,28 @@ class Funcs():
         self.list_bd.delete(*self.list_bd.get_children())
         self.db_connect()
         
-        lista = self.cursor.execute(""" SELECT cod, nome_cliente, endereço, cpf, inicio_contrato, aniversario_contrato, fim_contrato FROM clientes
+        lista = self.cursor.execute(""" SELECT cod,nome_proprietario, nome_cliente, endereço, cpf, inicio_contrato, aniversario_contrato, fim_contrato FROM clientes
         ORDER BY nome_cliente ASC; """)
 
-        for i in lista: 
+        for i in lista:
             self.list_bd.insert("", END, value= i)
+
+        data_atual = datetime.date.today()
+        prazo_vencimento = self.end - datetime.timedelta(days=45)
+        if data_atual >= prazo_vencimento:
+            assunto = f'Vencimento do contrato de {self.name} se aproximando'
+            mensagem = f"O contrato de {self.nameprop} proprietario de {self.name} está prestes a vencer em {self.end}."
+            yagmail.send('contato.slxadm@gmail.com', assunto, mensagem)
+
+            prazo_aniversario = self.renew - datetime.timedelta(days=45)
+        if data_atual >= prazo_aniversario:
+            assunto = f'Aniversário de contrato de {self.name} se aproximando'
+            mensagem = f"O aniversário do contrato de {self.nameprop} proprietario de {self.name} está prestes a chegar em {self.renew}."
+            yagmail.send('contato.slxadm@gmail.com', assunto, mensagem)    
+
         self.db_disconect()    
     def fill_fields_from_list(self, values):
+        self.input_nameprop.delete(0, END)
         self.input_name.delete(0, END)
         self.input_address.delete(0, END)
         self.input_cpf.delete(0, END)
@@ -90,12 +117,13 @@ class Funcs():
         self.input_renew.delete(0, END)
         self.input_end.delete(0, END)
         
-        self.input_name.insert(END, values[1])
-        self.input_address.insert(END, values[2])
-        self.input_cpf.insert(END, values[3])
-        self.input_start.insert(END, values[4])
-        self.input_renew.insert(END, values[5])
-        self.input_end.insert(END, values[6])
+        self.input_nameprop.insert(END, values[1])
+        self.input_name.insert(END, values[2])
+        self.input_address.insert(END, values[3])
+        self.input_cpf.insert(END, values[4])
+        self.input_start.insert(END, values[5])
+        self.input_renew.insert(END, values[6])
+        self.input_end.insert(END, values[7])
     def OnDoubleClick(self, event):
         selected_item = self.list_bd.selection()[0]
         values = self.list_bd.item(selected_item, 'values')
@@ -106,7 +134,7 @@ class Funcs():
         values = self.list_bd.item(selected_item, 'values')
         self.db_connect()
         try:
-            self.cursor.execute("DELETE FROM clientes WHERE nome_cliente = ?", (values[1],))
+            self.cursor.execute("DELETE FROM clientes WHERE nome_proprietario = ?", (values[1],))
             self.conn.commit()
             print("Cliente excluído com sucesso.")
             self.list_select()
@@ -116,6 +144,7 @@ class Funcs():
         finally:
             self.db_disconect()
     def update_client(self):
+
         selected_item = self.list_bd.selection()
         if not selected_item:
             print("Nenhum cliente selecionado para atualização.")
@@ -147,31 +176,36 @@ class Funcs():
             print("Erro ao atualizar cliente", e)
         finally:
             self.db_disconect()
-    def import_from_excel(self, excel_file):
+    def save_to_database(self, df):
         try:
-            df = pd.read_excel(excel_file, sheet_name="clientes")  # Ler a planilha "clientes" do arquivo Excel
             self.db_connect()
 
             for index, row in df.iterrows():
-                name = row['nome']
+                prop = row['nome_proprietario']
+                name = row['nome_cliente']
                 address = row['endereço']
                 cpf = row['cpf']
                 start = row['inicio_contrato']
                 renew = row['aniversario_contrato']
                 end = row['fim_contrato']
 
-                self.cursor.execute("""
-                    INSERT INTO clientes (nome_cliente, endereço, cpf, inicio_contrato, aniversario_contrato, fim_contrato)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (name, address, cpf, start, renew, end))
+            self.cursor.execute("""
+                INSERT INTO clientes (nome_proprietario, nome_cliente, endereço, cpf, inicio_contrato, aniversario_contrato, fim_contrato)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (prop, name, address, cpf, start, renew, end))
 
             self.conn.commit()
-            print("Dados importados com sucesso.")
+            print("Dados salvos no banco de dados com sucesso.")
+        except sqlite3.Error as e:
+            print("Erro ao salvar dados no banco de dados:", e)
+        finally:
+            self.db_disconect()
+    def import_from_excel(self, excel_file):
+        try:
+            df = pd.read_excel(excel_file, sheet_name="clientes")
+            self.save_to_database(df)
         except Exception as e:
             print("Erro ao importar dados:", e)
-        finally:
-            self.db_disconect()    
-        
 
 class Application(Funcs):
     def __init__(self):
@@ -182,8 +216,10 @@ class Application(Funcs):
         self.list_frame2()
         self.db_create()
         self.list_select()
+        excel_file_path = "C:\\Users\\Carlos Alberto\\OneDrive\\DANIEL\\CONTROLE DE CONTRATOS.xlsx"
+        self.import_from_excel(excel_file_path)
         self.root.mainloop()
-    
+        
     def screen(self):
         self.root.title("SISTEMA SLX")
         self.root.configure(background="#D3D3D3")
@@ -286,88 +322,100 @@ class Application(Funcs):
                                 font=('verdana', 10, 'bold'), command= self.switch_to_locatarios_tab)
         self.bt_return.place(relx= 0.92, rely=0.87, relwidth=0.08, relheight=0.12)
         
+        ### Proprietario
+
+        self.lb_nameprop = Label(self.page3, text="Proprietario:", bg="White", fg="black",
+                                                font=('verdana', 10, 'bold'))
+        self.lb_nameprop.place(relx=0.01, rely=0.02)
+
+        self.input_nameprop = Entry(self.page3, bg="white", 
+                             highlightbackground="black", highlightthickness=1, fg="black",
+                             font=("verdana", 10, "bold"))
+        self.input_nameprop.place(relx=0.01, rely=0.1, relwidth=0.25, relheight=0.09)
+
         ### Nome
         self.lb_name = Label(self.page3, text="Nome:", bg="White", fg="black",
                                                 font=('verdana', 10, 'bold'))
-        self.lb_name.place(relx=0.01, rely=0.02)
+        self.lb_name.place(relx=0.01, rely=0.2)
 
         self.input_name = Entry(self.page3, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_name.place(relx=0.01, rely=0.1, relwidth=0.25, relheight=0.09)
+        self.input_name.place(relx=0.01, rely=0.3, relwidth=0.25, relheight=0.09)
         
         ### Endereço
         self.lb_address = Label(self.page3, text="Endereço:", bg="White", fg="black",
                                 font=('verdana', 10, 'bold'))
-        self.lb_address.place(relx=0.01, rely=0.2)
+        self.lb_address.place(relx=0.01, rely=0.4)
 
         self.input_address = Entry(self.page3, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_address.place(relx=0.01, rely=0.28, relwidth=0.4, relheight=0.09)
+        self.input_address.place(relx=0.01, rely=0.48, relwidth=0.25, relheight=0.09)
         
         ### CPF
         self.lb_cpf = Label(self.page3, text="CPF:", bg="White", fg="black",
                                 font=('verdana', 10, 'bold'))
-        self.lb_cpf.place(relx=0.01, rely=0.4)
+        self.lb_cpf.place(relx=0.01, rely=0.6)
 
         self.input_cpf = Entry(self.page3, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_cpf.place(relx=0.01, rely=0.48, relwidth=0.15, relheight=0.09)
-        
+        self.input_cpf.place(relx=0.01, rely=0.68, relwidth=0.15, relheight=0.09)
+
         ### Inicio
-        self.lb_start = Label(self.page3, text="Inicio:", bg="White", fg="black",
+        self.lb_start = Label(self.page3, text="Inicio Contrato:", bg="White", fg="black",
                                 font=('verdana', 10, 'bold'))
-        self.lb_start.place(relx=0.01, rely=0.60)
+        self.lb_start.place(relx=0.3, rely=0.02)
 
         self.input_start = Entry(self.page3, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_start.place(relx=0.01, rely=0.68, relwidth=0.08, relheight=0.09)
+        self.input_start.place(relx=0.3, rely=0.1, relwidth=0.08, relheight=0.09)
         
         ### Aniversario
-        self.lb_renew = Label(self.page3, text="Aniversario:", bg="White", fg="black",
+        self.lb_renew = Label(self.page3, text="Aniversario Contrato:", bg="White", fg="black",
                                 font=('verdana', 10, 'bold'))
-        self.lb_renew.place(relx=0.2, rely=0.68)
+        self.lb_renew.place(relx=0.4, rely=0.13)
 
         self.input_renew = Entry(self.page3, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_renew.place(relx=0.2, rely=0.78, relwidth=0.08, relheight=0.09)
+        self.input_renew.place(relx=0.4, rely=0.2, relwidth=0.08, relheight=0.09)
         
         ### Fim
+
+        self.lb_end = Label(self.page3, text="Fim Contrato:", bg="White", fg="black",
+                                font=('verdana', 10, 'bold'))
+        self.lb_end.place(relx=0.3, rely=0.2)
+        
         self.input_end = Entry(self.page3, bg="white", 
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
-        self.input_end.place(relx=0.01, rely=0.88, relwidth=0.08, relheight=0.09)
-        
-        self.lb_end = Label(self.page3, text="Fim:", bg="White", fg="black",
-                                font=('verdana', 10, 'bold'))
-        self.lb_end.place(relx=0.01, rely=0.8)
-        
-
+        self.input_end.place(relx=0.3, rely=0.28, relwidth=0.08, relheight=0.09)
     
     def list_frame2(self):
         self.show_frame_2 = True
         self.list_bd = ttk.Treeview(self.frame_2, height=3, column=("col1", "col2", "col3", "col4", "col5", "col6", "col7", "col8"))
         self.list_bd.heading("#0", text="")
         self.list_bd.heading("#1", text="Codigo")
-        self.list_bd.heading("#2", text="Nome")
-        self.list_bd.heading("#3", text="Endereço")
-        self.list_bd.heading("#4", text="CPF")          
-        self.list_bd.heading("#5", text="Inicio")
-        self.list_bd.heading("#6", text="Aniversário")
-        self.list_bd.heading("#7", text="Fim")
+        self.list_bd.heading("#2", text="Proprietario")
+        self.list_bd.heading("#3", text="Locatario")
+        self.list_bd.heading("#4", text="Endereço")
+        self.list_bd.heading("#5", text="CPF")          
+        self.list_bd.heading("#6", text="Inicio")
+        self.list_bd.heading("#7", text="Aniversário")
+        self.list_bd.heading("#8", text="Fim")
 
         self.list_bd.column("#0", width=1)
         self.list_bd.column("#1", width=50)
-        self.list_bd.column("#2", width=250)
-        self.list_bd.column("#3", width=450)
-        self.list_bd.column("#4", width=180)
-        self.list_bd.column("#5", width=100)
+        self.list_bd.column("#2", width=150)
+        self.list_bd.column("#3", width=150)
+        self.list_bd.column("#4", width=250)
+        self.list_bd.column("#5", width=180)
         self.list_bd.column("#6", width=100)
         self.list_bd.column("#7", width=100)
+        self.list_bd.column("#8", width=100)
         
         self.list_bd.place(relx=0.01, rely=0.01, relwidth=0.95, relheight=0.85)
 
