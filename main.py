@@ -8,8 +8,6 @@ import datetime
 
 
 class Funcs():
-    def email():
-        yag = yagmail.SMTP('sistema.slxadm@gmail.com', '8520147we')
     def clean_fields_loc(self):
         self.input_nome.delete(0, END) 
     def clean_fields(self):
@@ -46,11 +44,11 @@ class Funcs():
                             cod INTEGER PRIMARY KEY AUTOINCREMENT, 
                             nome_proprietario CHAR(40) NOT NULL,
                             nome_cliente CHAR(40) NOT NULL,
-                            cpf VARCHAR(25) NOT NULL,
                             endereço CHAR(40) NOT NULL,
-                            inicio_contrato VARCHAR(6) NOT NULL, 
-                            aniversario_contrato VARCHAR(6) NOT NULL,
-                            fim_contrato VARCHAR(6)
+                            cpf VARCHAR(40) NOT NULL,
+                            inicio_contrato VARCHAR(50) NOT NULL, 
+                            aniversario_contrato VARCHAR(50) NOT NULL,
+                            fim_contrato VARCHAR(50) NOT NULL
 
                                 );
                             """)
@@ -60,7 +58,7 @@ class Funcs():
         self.nameprop = self.input_nameprop.get()
         self.name = self.input_name.get()
         self.address = self.input_address.get()
-        self.cpf = self.input_cpf.get()
+        self.cpf = ''.join(filter(str.isdigit, cpf))
         self.start = self.input_start.get()
         self.renew = self.input_renew.get()
         self.end = self.input_end.get()
@@ -92,20 +90,7 @@ class Funcs():
         ORDER BY nome_cliente ASC; """)
 
         for i in lista:
-            self.list_bd.insert("", END, value= i)
-
-        data_atual = datetime.date.today()
-        prazo_vencimento = self.end - datetime.timedelta(days=45)
-        if data_atual >= prazo_vencimento:
-            assunto = f'Vencimento do contrato de {self.name} se aproximando'
-            mensagem = f"O contrato de {self.nameprop} proprietario de {self.name} está prestes a vencer em {self.end}."
-            yagmail.send('contato.slxadm@gmail.com', assunto, mensagem)
-
-            prazo_aniversario = self.renew - datetime.timedelta(days=45)
-        if data_atual >= prazo_aniversario:
-            assunto = f'Aniversário de contrato de {self.name} se aproximando'
-            mensagem = f"O aniversário do contrato de {self.nameprop} proprietario de {self.name} está prestes a chegar em {self.renew}."
-            yagmail.send('contato.slxadm@gmail.com', assunto, mensagem)    
+            self.list_bd.insert("", END, value= i)  
 
         self.db_disconect()    
     def fill_fields_from_list(self, values):
@@ -181,13 +166,16 @@ class Funcs():
             self.db_connect()
 
             for index, row in df.iterrows():
-                prop = row['nome_proprietario']
-                name = row['nome_cliente']
-                address = row['endereço']
-                cpf = row['cpf']
-                start = row['inicio_contrato']
-                renew = row['aniversario_contrato']
-                end = row['fim_contrato']
+                prop = row['LOCADOR']
+                name = row['LOCATARIO']
+                address = row['ENDEREÇO']
+                cpf = str(row['CPF'])
+                start = row['INICIO']
+                renew = row['ANIVERSARIO']
+                end = row['TERMINO']
+            
+                if pd.isna(start) or pd.isna(renew) or pd.isna(end):
+                    continue  
 
             self.cursor.execute("""
                 INSERT INTO clientes (nome_proprietario, nome_cliente, endereço, cpf, inicio_contrato, aniversario_contrato, fim_contrato)
@@ -202,11 +190,26 @@ class Funcs():
             self.db_disconect()
     def import_from_excel(self, excel_file):
         try:
-            df = pd.read_excel(excel_file, sheet_name="clientes")
+            df = pd.read_excel(excel_file, sheet_name="Plan1")
             self.save_to_database(df)
         except Exception as e:
             print("Erro ao importar dados:", e)
+    def email(self):
+        yag = yagmail.SMTP('sistema.slxadm@gmail.com', '8520147we')
 
+        data_atual = datetime.date.today()
+        prazo_vencimento = self.end - datetime.timedelta(days=45)
+        if data_atual >= prazo_vencimento:
+            assunto = f'Vencimento do contrato de {self.name} se aproximando'
+            mensagem = f"O contrato de {self.nameprop} proprietario de {self.name} está prestes a vencer em {self.end}."
+            yag.send('contato.slxadm@gmail.com', assunto, mensagem)
+
+            prazo_aniversario = self.renew - datetime.timedelta(days=45)
+        if data_atual >= prazo_aniversario:
+            assunto = f'Aniversário de contrato de {self.name} se aproximando'
+            mensagem = f"O aniversário do contrato de {self.nameprop} proprietario de {self.name} está prestes a chegar em {self.renew}."
+            yag.send('contato.slxadm@gmail.com', assunto, mensagem)  
+    
 class Application(Funcs):
     def __init__(self):
         self.root = Tk()
@@ -216,10 +219,10 @@ class Application(Funcs):
         self.list_frame2()
         self.db_create()
         self.list_select()
-        excel_file_path = "C:\\Users\\Carlos Alberto\\OneDrive\\DANIEL\\CONTROLE DE CONTRATOS.xlsx"
+        excel_file_path = "C:\\Users\\Carlos Alberto\\Desktop\\coisas daniel\\Sistema\\controle.xlsx"
         self.import_from_excel(excel_file_path)
         self.root.mainloop()
-        
+         
     def screen(self):
         self.root.title("SISTEMA SLX")
         self.root.configure(background="#D3D3D3")
