@@ -1,3 +1,4 @@
+### Import das operações
 from tkinter import *
 from tkinter import ttk
 import sqlite3 
@@ -6,10 +7,13 @@ import yagmail
 import pandas as pd
 import datetime
 
-
+### Classe das Funções
 class Funcs():
+    ### função limpa campo aba locatarios
     def clean_fields_loc(self):
         self.input_nome.delete(0, END) 
+
+    ### função limpa campos aba cadastro
     def clean_fields(self):
         self.input_nameprop.delete(0, END)
         self.input_name.delete(0, END)
@@ -18,26 +22,35 @@ class Funcs():
         self.input_start.delete(0, END)
         self.input_renew.delete(0, END)
         self.input_end.delete(0, END)
+
+    ### função para o botao levar para a aba cadastro
     def switch_to_cadastro_tab(self):
         self.page.select(self.page3)
         self.show_frame_2 = False  # Oculta o frame ao mudar para a aba "cadastro"
         self.frame_2.place_forget()  # Oculta o frame_2
     
+    ### função para botao levar para aba de locatarios
     def switch_to_locatarios_tab(self):
         self.page.select(self.page2)
         self.show_frame_2 = True  # Mostra o frame ao voltar para a aba "Locatarios"
         self.frame_2.place(relx=0.02, rely=0.5, relwidth=0.97, relheight=0.46)
-
+    
+    ### função para levar para aba inicial 
     def switch_to_initial_tab(self):
         self.page.select(self.page1)
         self.show_frame_2 = False  
         self.frame_2.place.forget()   
     
+    ### função para conecetar ao banco de dados
     def db_connect(self):
         self.conn = sqlite3.connect("bancoslx.db")
         self.cursor = self.conn.cursor(); print("conectado ao banco")
+
+    ### função para desconectar ao banco de dados 
     def db_disconect(self):
         self.conn.close(); print("desconectado ao banco")
+
+    ### função para criar o banco de dados
     def db_create(self):
         self.db_connect()
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS clientes (
@@ -53,7 +66,9 @@ class Funcs():
                                 );
                             """)
         self.conn.commit()
-        self.db_disconect()                    
+        self.db_disconect() 
+
+    ### função adiocionar novo cliente no banco de dados
     def add_new_client(self):
         self.nameprop = self.input_nameprop.get()
         self.name = self.input_name.get()
@@ -82,6 +97,8 @@ class Funcs():
             print("Erro ao adicionar novo cliente:", e)
         finally:
             self.db_disconect()
+
+    ### função para selecionar na lista e aparecer no frame 2 
     def list_select(self):
         self.list_bd.delete(*self.list_bd.get_children())
         self.db_connect()
@@ -92,7 +109,9 @@ class Funcs():
         for i in lista:
             self.list_bd.insert("", END, value= i)  
 
-        self.db_disconect()    
+        self.db_disconect() 
+
+    ### função para quando der duplo clique no nome do frame 2 leva para aba cadastro e preenche os inputs
     def fill_fields_from_list(self, values):
         self.input_nameprop.delete(0, END)
         self.input_name.delete(0, END)
@@ -109,11 +128,15 @@ class Funcs():
         self.input_start.insert(END, values[5])
         self.input_renew.insert(END, values[6])
         self.input_end.insert(END, values[7])
+
+    ### função para o duplo clique
     def OnDoubleClick(self, event):
         selected_item = self.list_bd.selection()[0]
         values = self.list_bd.item(selected_item, 'values')
         self.fill_fields_from_list(values)
         self.switch_to_cadastro_tab()
+
+    ### função para deletar o cliente do banco de dados 
     def client_delete(self):     
         selected_item = self.list_bd.selection()[0]
         values = self.list_bd.item(selected_item, 'values')
@@ -128,6 +151,8 @@ class Funcs():
             print("Erro ao excluir cliente:", e)
         finally:
             self.db_disconect()
+
+    ### função para dar editar o cliente no banco de dados 
     def update_client(self):
 
         selected_item = self.list_bd.selection()
@@ -161,6 +186,8 @@ class Funcs():
             print("Erro ao atualizar cliente", e)
         finally:
             self.db_disconect()
+
+    ### função a para salvar a planilha no banco de dados
     def save_to_database(self, df):
         try:
             self.db_connect()
@@ -188,12 +215,16 @@ class Funcs():
             print("Erro ao salvar dados no banco de dados:", e)
         finally:
             self.db_disconect()
+
+    ### função para importar do excel 
     def import_from_excel(self, excel_file):
         try:
             df = pd.read_excel(excel_file, sheet_name="Plan1")
             self.save_to_database(df)
         except Exception as e:
             print("Erro ao importar dados:", e)
+
+    ### funçao para mandar pro email
     def email(self):
         yag = yagmail.SMTP('sistema.slxadm@gmail.com', '8520147we')
 
@@ -211,6 +242,8 @@ class Funcs():
             yag.send('contato.slxadm@gmail.com', assunto, mensagem)  
     
 class Application(Funcs):
+
+    ### função de iniciar o aplicativo e as funções a cima
     def __init__(self):
         self.root = Tk()
         self.screen()
@@ -222,13 +255,15 @@ class Application(Funcs):
         excel_file_path = "C:\\Users\\Carlos Alberto\\Desktop\\coisas daniel\\Sistema\\controle.xlsx"
         self.import_from_excel(excel_file_path)
         self.root.mainloop()
-         
+
+    ### config do tkinter tamanho do aplicativo
     def screen(self):
         self.root.title("SISTEMA SLX")
         self.root.configure(background="#D3D3D3")
         self.root.geometry("{0}x{1}+0+0".format(self.root.winfo_screenwidth(), self.root.winfo_screenheight()))
         self.root.resizable(True, True)
-    
+
+    ### config dos frames
     def widgets(self):
         self.frame_1 = Frame(self.root, bd=4, bg="white", 
                              highlightbackground="#D3D3D3", highlightthickness=2)
@@ -237,7 +272,8 @@ class Application(Funcs):
         self.frame_2 = Frame(self.root, bd=4, bg="white", 
                              highlightbackground="#D3D3D3", highlightthickness=2)
         self.frame_2.place(relx=0.02, rely=0.5, relwidth=0.97, relheight=0.46)
-    
+
+    ### config dos botoes do frame 1 
     def buttons_frame1(self):
         ### Paginas e configuração
         self.page = ttk.Notebook(self.frame_1)
@@ -396,7 +432,8 @@ class Application(Funcs):
                              highlightbackground="black", highlightthickness=1, fg="black",
                              font=("verdana", 10, "bold"))
         self.input_end.place(relx=0.3, rely=0.28, relwidth=0.08, relheight=0.09)
-    
+
+    ### lista do banco de dados frame 2 
     def list_frame2(self):
         self.show_frame_2 = True
         self.list_bd = ttk.Treeview(self.frame_2, height=3, column=("col1", "col2", "col3", "col4", "col5", "col6", "col7", "col8"))
